@@ -37,21 +37,60 @@
         const submissionArea = document.getElementById('submission-area');
         const unlockBtn = document.getElementById('unlock-btn');
         const ownerPasswordInput = document.getElementById('owner-password');
+        const downloadLink = document.getElementById('download-link');
+        const STORAGE_KEY = 'clientSubmissions';
+        const OWNER_UNLOCKED_KEY = 'ownerUnlocked';
+        const OWNER_PASSWORD = 'm1l@neEservices';
 
         function escapeCsv(value) {
             return '"' + String(value).replace(/"/g, '""') + '"';
         }
 
+        function formatSubmittedAt(timestamp) {
+            const date = timestamp ? new Date(timestamp) : new Date();
+            return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
+        }
+
+        function getStoredSubmissions() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            } catch (error) {
+                console.error('Failed to load submissions', error);
+                return [];
+            }
+        }
+
+        function saveSubmissions(submissions) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
+        }
+
         function buildCsv(submissions) {
-            const header = ['Full Name', 'Phone Number', 'Email Address', 'Service'];
-            const rows = submissions.map(item => [item.fullName, item.phone, item.email, item.service]);
+            const header = ['Full Name', 'Phone Number', 'Email Address', 'Service', 'Submitted At'];
+            const rows = submissions.map(item => [item.fullName, item.phone, item.email, item.service, formatSubmittedAt(item.submittedAt)]);
             return [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
         }
 
+        function showOwnerView() {
+            submissionArea.style.display = 'block';
+            ownerAccess.style.display = 'none';
+            loadSubmissions();
+        }
+
+        function hideOwnerView() {
+            submissionArea.style.display = 'none';
+            ownerAccess.style.display = 'block';
+        }
+
+        function isOwnerUnlocked() {
+            return localStorage.getItem(OWNER_UNLOCKED_KEY) === 'true';
+        }
+
         function loadSubmissions() {
-            const submissions = JSON.parse(localStorage.getItem('clientSubmissions') || '[]');
+            const submissions = getStoredSubmissions();
             if (!submissions.length) {
                 list.innerHTML = '<p>No submissions yet.</p>';
+                downloadLink.href = '#';
+                downloadLink.style.display = 'none';
                 return;
             }
 
@@ -59,43 +98,52 @@
                 <div class="submission-item">
                     <strong>${item.fullName}</strong><br>
                     Phone: ${item.phone}<br>
-                    Email: ${item.email}
+                    Email: ${item.email}<br>
+                    Service: ${item.service}<br>
+                    <small>Submitted: ${formatSubmittedAt(item.submittedAt)}</small>
                 </div>
             `).join('');
 
             const csvData = buildCsv(submissions);
             const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            const downloadLink = document.getElementById('download-link');
             downloadLink.href = url;
             downloadLink.style.display = 'inline-block';
         }
 
         form.addEventListener('submit', function (e) {
             e.preventDefault();
-            const submissions = JSON.parse(localStorage.getItem('clientSubmissions') || '[]');
+            const submissions = getStoredSubmissions();
             submissions.push({
-                fullName: document.getElementById('fullName').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                service: document.getElementById('service').value
+                fullName: document.getElementById('fullName').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                service: document.getElementById('service').value.trim(),
+                submittedAt: new Date().toISOString()
             });
-            localStorage.setItem('clientSubmissions', JSON.stringify(submissions));
+            saveSubmissions(submissions);
             form.reset();
-            loadSubmissions();
+            if (isOwnerUnlocked()) {
+                showOwnerView();
+            } else {
+                loadSubmissions();
+            }
         });
 
         unlockBtn.addEventListener('click', function () {
-            if (ownerPasswordInput.value === 'm1l@neEservices') {
-                submissionArea.style.display = 'block';
-                ownerAccess.style.display = 'none';
-                loadSubmissions();
+            if (ownerPasswordInput.value === OWNER_PASSWORD) {
+                localStorage.setItem(OWNER_UNLOCKED_KEY, 'true');
+                showOwnerView();
             } else {
                 alert('Access denied');
             }
         });
 
-        loadSubmissions();
+        if (isOwnerUnlocked()) {
+            showOwnerView();
+        } else {
+            hideOwnerView();
+        }
     </script>
 </body>
 </html>
