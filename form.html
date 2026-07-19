@@ -8,11 +8,12 @@
 </head>
 <body>
     <div class="form-page">
-        <h2>إضافة معلومات العميل</h2>
+        <h2>Service Inquiry Form</h2>
         <form id="client-form">
             <input type="text" id="fullName" placeholder="Full Name" required>
             <input type="tel" id="phone" placeholder="Phone Number" required>
             <input type="email" id="email" placeholder="Email Address" required>
+            <input type="text" id="service" placeholder="What service do you want?" required>
             <button type="submit">Save</button>
         </form>
 
@@ -42,8 +43,8 @@
         }
 
         function buildCsv(submissions) {
-            const header = ['Full Name', 'Phone Number', 'Email Address'];
-            const rows = submissions.map(item => [item.fullName, item.phone, item.email]);
+            const header = ['Full Name', 'Phone Number', 'Email Address', 'Service'];
+            const rows = submissions.map(item => [item.fullName, item.phone, item.email, item.service]);
             return [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
         }
 
@@ -76,7 +77,8 @@
             submissions.push({
                 fullName: document.getElementById('fullName').value,
                 phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value
+                email: document.getElementById('email').value,
+                service: document.getElementById('service').value
             });
             localStorage.setItem('clientSubmissions', JSON.stringify(submissions));
             form.reset();

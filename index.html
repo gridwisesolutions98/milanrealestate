@@ -53,7 +53,20 @@
         </div>
     </section>
 
-    <!-- Section 4: Contact -->
+    <!-- Section 4: Feedback -->
+    <section class="feedback-section" id="feedback">
+        <h3>Feedback</h3>
+        <form id="feedback-form">
+            <input type="text" id="feedback-name" placeholder="Full Name" required>
+            <textarea id="feedback-text" placeholder="Write your feedback" required></textarea>
+            <button type="submit">Submit</button>
+        </form>
+        <div class="feedback-list">
+            <ul id="feedback-names"></ul>
+        </div>
+    </section>
+
+    <!-- Section 5: Contact -->
 <footer class="contact-footer" id="contact">
     <div class="details">
         <h3>MILAN REAL ESTATE SERVICES</h3>
@@ -63,9 +76,33 @@
         
         <h4>working Hours</h4>
         <p>Monday to Friday: 9:00 am to 6:00 pm</p>
-        <p>Saturday: 9:00 am to 12 noon</p>
+        <p>Saturday: 9:00 am to 1:00 pm</p>
     </div>
     <img src="./house.jpg/5.jpg.jpg" alt="Office">
 </footer>
+<script>
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackNames = document.getElementById('feedback-names');
+
+    function loadFeedbackNames() {
+        const feedbacks = JSON.parse(localStorage.getItem('feedbackNames') || '[]');
+        feedbackNames.innerHTML = feedbacks.map(item => `<li><strong>${item.name}</strong><br>${item.feedback}</li>`).join('');
+    }
+
+    feedbackForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const name = document.getElementById('feedback-name').value.trim();
+        const feedback = document.getElementById('feedback-text').value.trim();
+        if (!name || !feedback) return;
+
+        const feedbacks = JSON.parse(localStorage.getItem('feedbackNames') || '[]');
+        feedbacks.push({ name, feedback });
+        localStorage.setItem('feedbackNames', JSON.stringify(feedbacks));
+        feedbackForm.reset();
+        loadFeedbackNames();
+    });
+
+    loadFeedbackNames();
+</script>
 </body>
 </html>ٍ

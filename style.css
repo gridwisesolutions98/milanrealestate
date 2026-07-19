@@ -161,11 +161,12 @@ img { width: 50%; height: auto; } /* Ensures images take half the width */
 
 .form-page {
     max-width: 600px;
-    margin: 40px auto;
+    margin: 40px 20px;
     padding: 20px;
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-align: left;
 }
 
 .form-page form {
@@ -203,4 +204,45 @@ img { width: 50%; height: auto; } /* Ensures images take half the width */
 .submission-item {
     padding: 10px 0;
     border-bottom: 1px solid #ddd;
+}
+
+.feedback-section {
+    padding: 30px 20px;
+    background: #f4f4f4;
+    margin: 20px;
+    border-radius: 8px;
+}
+
+.feedback-section form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.feedback-section input,
+.feedback-section textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.feedback-section textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.feedback-section button {
+    padding: 10px 16px;
+    background: #555;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.feedback-list ul {
+    padding-left: 20px;
 }
