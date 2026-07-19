@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Form</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="form-page">
+        <h2>إضافة معلومات العميل</h2>
+        <form id="client-form">
+            <input type="text" id="fullName" placeholder="Full Name" required>
+            <input type="tel" id="phone" placeholder="Phone Number" required>
+            <input type="email" id="email" placeholder="Email Address" required>
+            <button type="submit">Save</button>
+        </form>
+
+        <div class="submissions">
+            <h3>Saved Clients</h3>
+            <div id="owner-access">
+                <input type="password" id="owner-password" placeholder="Owner password">
+                <button type="button" id="unlock-btn">Access</button>
+            </div>
+            <div id="submission-area" style="display:none;">
+                <div id="submission-list"></div>
+                <a id="download-link" href="#" download="clients.csv" style="display:none; margin-top: 10px;">Download CSV</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('client-form');
+        const list = document.getElementById('submission-list');
+        const ownerAccess = document.getElementById('owner-access');
+        const submissionArea = document.getElementById('submission-area');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const ownerPasswordInput = document.getElementById('owner-password');
+
+        function escapeCsv(value) {
+            return '"' + String(value).replace(/"/g, '""') + '"';
+        }
+
+        function buildCsv(submissions) {
+            const header = ['Full Name', 'Phone Number', 'Email Address'];
+            const rows = submissions.map(item => [item.fullName, item.phone, item.email]);
+            return [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
+        }
+
+        function loadSubmissions() {
+            const submissions = JSON.parse(localStorage.getItem('clientSubmissions') || '[]');
+            if (!submissions.length) {
+                list.innerHTML = '<p>No submissions yet.</p>';
+                return;
+            }
+
+            list.innerHTML = submissions.map(item => `
+                <div class="submission-item">
+                    <strong>${item.fullName}</strong><br>
+                    Phone: ${item.phone}<br>
+                    Email: ${item.email}
+                </div>
+            `).join('');
+
+            const csvData = buildCsv(submissions);
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.getElementById('download-link');
+            downloadLink.href = url;
+            downloadLink.style.display = 'inline-block';
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const submissions = JSON.parse(localStorage.getItem('clientSubmissions') || '[]');
+            submissions.push({
+                fullName: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value
+            });
+            localStorage.setItem('clientSubmissions', JSON.stringify(submissions));
+            form.reset();
+            loadSubmissions();
+        });
+
+        unlockBtn.addEventListener('click', function () {
+            if (ownerPasswordInput.value === 'm1l@neEservices') {
+                submissionArea.style.display = 'block';
+                ownerAccess.style.display = 'none';
+                loadSubmissions();
+            } else {
+                alert('Access denied');
+            }
+        });
+
+        loadSubmissions();
+    </script>
+</body>
+</html>
