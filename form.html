@@ -140,7 +140,7 @@
 
         async function showOwnerView() {
             submissionArea.style.display = 'block';
-            ownerAccess.style.display = 'none';
+            ownerAccess.style.display = 'block';
             stopRefreshTimer();
             await loadSubmissions();
             refreshTimer = setInterval(loadSubmissions, 3000);
@@ -211,6 +211,7 @@
         unlockBtn.addEventListener('click', async function () {
             if (ownerPasswordInput.value === OWNER_PASSWORD) {
                 localStorage.setItem(OWNER_UNLOCKED_KEY, 'true');
+                ownerPasswordInput.value = '';
                 await showOwnerView();
             } else {
                 alert('Access denied');
