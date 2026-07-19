@@ -14,33 +14,14 @@
             <input type="tel" id="phone" placeholder="Phone Number" required>
             <input type="email" id="email" placeholder="Email Address" required>
             <input type="text" id="service" placeholder="What service do you want?" required>
-            <button type="submit">Save</button>
+            <button type="submit">Submit</button>
         </form>
 
-        <div class="submissions">
-            <h3>Saved Clients</h3>
-            <div id="owner-access">
-                <input type="password" id="owner-password" placeholder="Owner password">
-                <button type="button" id="unlock-btn">Access</button>
-            </div>
-            <div id="submission-area" style="display:none;">
-                <div id="submission-list"></div>
-                <a id="download-link" href="#" download="clients.csv" style="display:none; margin-top: 10px;">Download CSV</a>
-            </div>
-        </div>
     </div>
 
     <script>
         const form = document.getElementById('client-form');
-        const list = document.getElementById('submission-list');
-        const ownerAccess = document.getElementById('owner-access');
-        const submissionArea = document.getElementById('submission-area');
-        const unlockBtn = document.getElementById('unlock-btn');
-        const ownerPasswordInput = document.getElementById('owner-password');
-        const downloadLink = document.getElementById('download-link');
         const STORAGE_KEY = 'clientSubmissions';
-        const OWNER_UNLOCKED_KEY = 'ownerUnlocked';
-        const OWNER_PASSWORD = 'm1l@neEservices';
 
         function getApiUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -57,15 +38,6 @@
         }
 
         const API_URL = getApiUrl();
-
-        function escapeCsv(value) {
-            return '"' + String(value).replace(/"/g, '""') + '"';
-        }
-
-        function formatSubmittedAt(timestamp) {
-            const date = timestamp ? new Date(timestamp) : new Date();
-            return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
-        }
 
         function getLocalSubmissions() {
             try {
@@ -132,63 +104,9 @@
             }
         }
 
-        function buildCsv(submissions) {
-            const header = ['Full Name', 'Phone Number', 'Email Address', 'Service', 'Submitted At'];
-            const rows = submissions.map(item => [item.fullName, item.phone, item.email, item.service, formatSubmittedAt(item.submittedAt)]);
-            return [header, ...rows].map(row => row.map(escapeCsv).join(',')).join('\n');
-        }
-
-        async function showOwnerView() {
-            submissionArea.style.display = 'block';
-            ownerAccess.style.display = 'block';
-            stopRefreshTimer();
-            await loadSubmissions();
-            refreshTimer = setInterval(loadSubmissions, 3000);
-        }
-
-        function hideOwnerView() {
-            submissionArea.style.display = 'none';
-            ownerAccess.style.display = 'block';
-            stopRefreshTimer();
-        }
-
-        let refreshTimer = null;
-
-        function stopRefreshTimer() {
-            if (refreshTimer) {
-                clearInterval(refreshTimer);
-                refreshTimer = null;
-            }
-        }
-
-        function isOwnerUnlocked() {
-            return localStorage.getItem(OWNER_UNLOCKED_KEY) === 'true';
-        }
-
-        async function loadSubmissions() {
-            const submissions = await getStoredSubmissions();
-            if (!submissions.length) {
-                list.innerHTML = '<p>No submissions yet.</p>';
-                downloadLink.href = '#';
-                downloadLink.style.display = 'none';
-                return;
-            }
-
-            list.innerHTML = submissions.map(item => `
-                <div class="submission-item">
-                    <strong>${item.fullName}</strong><br>
-                    Phone: ${item.phone}<br>
-                    Email: ${item.email}<br>
-                    Service: ${item.service}<br>
-                    <small>Submitted: ${formatSubmittedAt(item.submittedAt)}</small>
-                </div>
-            `).join('');
-
-            const csvData = buildCsv(submissions);
-            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            downloadLink.href = url;
-            downloadLink.style.display = 'inline-block';
+        function formatSubmittedAt(timestamp) {
+            const date = timestamp ? new Date(timestamp) : new Date();
+            return Number.isNaN(date.getTime()) ? 'Unknown time' : date.toLocaleString();
         }
 
         form.addEventListener('submit', async function (e) {
@@ -202,27 +120,13 @@
             };
 
             await saveSubmission(submission);
+
+            const whatsappMessage = `New service inquiry:%0A%0AFull Name: ${encodeURIComponent(submission.fullName)}%0APhone: ${encodeURIComponent(submission.phone)}%0AEmail: ${encodeURIComponent(submission.email)}%0AService: ${encodeURIComponent(submission.service)}%0A%0ASubmitted At: ${encodeURIComponent(new Date(submission.submittedAt).toLocaleString())}`;
+            const whatsappUrl = `https://wa.me/9613277879?text=${whatsappMessage}`;
+            window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+
             form.reset();
-            if (isOwnerUnlocked()) {
-                await showOwnerView();
-            }
         });
-
-        unlockBtn.addEventListener('click', async function () {
-            if (ownerPasswordInput.value === OWNER_PASSWORD) {
-                localStorage.setItem(OWNER_UNLOCKED_KEY, 'true');
-                ownerPasswordInput.value = '';
-                await showOwnerView();
-            } else {
-                alert('Access denied');
-            }
-        });
-
-        if (isOwnerUnlocked()) {
-            showOwnerView();
-        } else {
-            hideOwnerView();
-        }
     </script>
 </body>
 </html>
