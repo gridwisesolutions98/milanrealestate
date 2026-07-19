@@ -7,7 +7,14 @@ const host = '0.0.0.0';
 const rootDir = __dirname;
 const dataFile = path.join(rootDir, 'clients-data.json');
 
+function ensureDataFile() {
+  if (!fs.existsSync(dataFile)) {
+    fs.writeFileSync(dataFile, '[]');
+  }
+}
+
 function readClients() {
+  ensureDataFile();
   try {
     const raw = fs.readFileSync(dataFile, 'utf8');
     const parsed = JSON.parse(raw);
@@ -18,6 +25,7 @@ function readClients() {
 }
 
 function writeClients(clients) {
+  ensureDataFile();
   fs.writeFileSync(dataFile, JSON.stringify(clients, null, 2));
 }
 

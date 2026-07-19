@@ -41,7 +41,22 @@
         const STORAGE_KEY = 'clientSubmissions';
         const OWNER_UNLOCKED_KEY = 'ownerUnlocked';
         const OWNER_PASSWORD = 'm1l@neEservices';
-        const API_URL = '/api/clients';
+
+        function getApiUrl() {
+            const params = new URLSearchParams(window.location.search);
+            const configuredUrl = params.get('api');
+            if (configuredUrl) {
+                return configuredUrl.endsWith('/api/clients') ? configuredUrl : `${configuredUrl.replace(/\/$/, '')}/api/clients`;
+            }
+
+            if (window.location.origin && window.location.origin.startsWith('http')) {
+                return `${window.location.origin}/api/clients`;
+            }
+
+            return 'http://127.0.0.1:3000/api/clients';
+        }
+
+        const API_URL = getApiUrl();
 
         function escapeCsv(value) {
             return '"' + String(value).replace(/"/g, '""') + '"';
@@ -65,19 +80,6 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
         }
 
-        function mergeSubmissions(remoteSubmissions, localSubmissions) {
-            const merged = [];
-            const seen = new Set();
-            [...remoteSubmissions, ...localSubmissions].forEach(item => {
-                const key = [item.fullName || '', item.phone || '', item.email || '', item.service || '', item.submittedAt || ''].join('|');
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    merged.push(item);
-                }
-            });
-            return merged;
-        }
-
         async function getStoredSubmissions() {
             const localSubmissions = getLocalSubmissions();
 
@@ -85,11 +87,25 @@
                 const response = await fetch(API_URL, { headers: { Accept: 'application/json' } });
                 if (response.ok) {
                     const remoteSubmissions = await response.json();
-                    const mergedSubmissions = mergeSubmissions(Array.isArray(remoteSubmissions) ? remoteSubmissions : [], localSubmissions);
-                    if (mergedSubmissions.length) {
+                    const normalizedRemote = Array.isArray(remoteSubmissions) ? remoteSubmissions : [];
+
+                    if (normalizedRemote.length > 0) {
+                        const mergedSubmissions = [...normalizedRemote];
+                        const existingKeys = new Set(mergedSubmissions.map(item => `${item.fullName || ''}|${item.phone || ''}|${item.email || ''}|${item.service || ''}|${item.submittedAt || ''}`));
+                        localSubmissions.forEach(item => {
+                            const key = `${item.fullName || ''}|${item.phone || ''}|${item.email || ''}|${item.service || ''}|${item.submittedAt || ''}`;
+                            if (!existingKeys.has(key)) {
+                                mergedSubmissions.push(item);
+                            }
+                        });
+
                         saveLocalSubmissions(mergedSubmissions);
+                        return mergedSubmissions;
                     }
-                    return mergedSubmissions;
+
+                    if (localSubmissions.length > 0) {
+                        return localSubmissions;
+                    }
                 }
             } catch (error) {
                 console.warn('Shared storage unavailable, using browser storage instead.', error);
@@ -99,8 +115,6 @@
         }
 
         async function saveSubmission(submission) {
-            saveLocalSubmissions(getLocalSubmissions().concat(submission));
-
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -111,7 +125,10 @@
                     throw new Error('Failed to save remotely');
                 }
             } catch (error) {
-                console.warn('Remote save failed, but the submission was kept locally.', error);
+                console.warn('Remote save failed, but the submission is still being kept locally.', error);
+                const localSubmissions = getLocalSubmissions();
+                localSubmissions.push(submission);
+                saveLocalSubmissions(localSubmissions);
             }
         }
 
@@ -124,12 +141,24 @@
         async function showOwnerView() {
             submissionArea.style.display = 'block';
             ownerAccess.style.display = 'none';
+            stopRefreshTimer();
             await loadSubmissions();
+            refreshTimer = setInterval(loadSubmissions, 3000);
         }
 
         function hideOwnerView() {
             submissionArea.style.display = 'none';
             ownerAccess.style.display = 'block';
+            stopRefreshTimer();
+        }
+
+        let refreshTimer = null;
+
+        function stopRefreshTimer() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
         }
 
         function isOwnerUnlocked() {
@@ -176,8 +205,6 @@
             form.reset();
             if (isOwnerUnlocked()) {
                 await showOwnerView();
-            } else {
-                await loadSubmissions();
             }
         });
 
@@ -195,10 +222,6 @@
         } else {
             hideOwnerView();
         }
-
-        window.addEventListener('load', function () {
-            loadSubmissions();
-        });
     </script>
 </body>
 </html>
